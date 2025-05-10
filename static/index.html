@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MindfulAI Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              200: '#ddd6fe',
+              300: '#c4b5fd',
+              400: '#a78bfa',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              800: '#5b21b6',
+              900: '#4c1d95',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          height: {
+            'screen-90': '90vh',
+            'screen-95': '95vh',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media (max-width: 640px) {
+      body {
+        background: white;
+      }
+      .device-base {
+        display: none;
+      }
+    }
+    @media (min-width: 641px) {
+      body {
+        background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+      }
+    }
+    body {
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .message-bubble {
+      max-width: 85%;
+    }
+    @media (min-width: 768px) {
+      .message-bubble {
+        max-width: 75%;
+      }
+    }
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      background: #8b5cf6;
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+    .device-base {
+      width: 120%;
+      height: 30px;
+      background: #ede9fe;
+      border-radius: 0 0 50px 50px;
+      position: relative;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    .device-base::before {
+      content: '';
+      position: absolute;
+      width: 60%;
+      height: 10px;
+      background: #ddd6fe;
+      border-radius: 0 0 10px 10px;
+      bottom: -10px;
+      left: 20%;
+    }
+    /* Prevent zoom on input focus for mobile */
+    @media screen and (max-width: 640px) {
+      input[type="text"] {
+        font-size: 16px !important;
+      }
+    }
+    
+    /* Message animations */
+    @keyframes slideIn {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .message-animate {
+      animation: slideIn 0.3s ease-out;
+    }
+
+    /* Scroll to bottom button */
+    .scroll-to-bottom {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      background: rgba(139, 92, 246, 0.9);
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      z-index: 30;
+      backdrop-filter: blur(4px);
+    }
+
+    .scroll-to-bottom.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Message reactions */
+    .message-reactions {
+      position: absolute;
+      bottom: -20px;
+      right: 0;
+      display: flex;
+      gap: 4px;
+      background: white;
+      padding: 2px 6px;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      opacity: 0;
+      transform: translateY(5px);
+      transition: all 0.2s ease;
+    }
+
+    .message-container:hover .message-reactions {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reaction-button {
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+
+    .reaction-button:hover {
+      background: #f3f4f6;
+      transform: scale(1.1);
+    }
+
+    /* Input field animation */
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+      70% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+    }
+
+    .input-focus-animation:focus {
+      animation: pulse 2s infinite;
+    }
+
+    /* Copy button */
+    .copy-button {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .message-container:hover .copy-button {
+      opacity: 1;
+    }
+
+    /* Status indicators */
+    .message-status {
+      font-size: 0.75rem;
+      color: #6B7280;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* New chat button animation */
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .new-chat-button:hover svg {
+      animation: spin 1s linear infinite;
+    }
+
+    /* Timestamp tooltip */
+    .timestamp {
+      position: relative;
+    }
+
+    .timestamp:hover::after {
+      content: attr(data-timestamp);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body class="font-sans text-gray-800 h-screen flex flex-col items-center justify-end md:pb-8 px-0 md:px-4">
+  <!-- Device with base -->
+  <div class="flex flex-col items-center w-full h-full md:h-auto">
+    <!-- Main device -->
+    <div class="w-full md:max-w-lg bg-white md:bg-white/90 md:backdrop-blur-sm md:rounded-2xl md:shadow-xl overflow-hidden flex flex-col h-full md:h-[85vh] relative z-10">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-primary-500 to-primary-600 p-4 md:p-5 text-white sticky top-0 z-20">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <button class="new-chat-button bg-white/20 p-2 rounded-full hover:bg-white/30 transition">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            <div>
+              <h1 class="text-lg md:text-xl font-semibold">MindfulAI</h1>
+              <p class="text-xs md:text-sm text-primary-100 opacity-90">Your mental health companion</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button class="text-white/80 hover:text-white transition" title="Clear chat">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+            <a href="/" class="text-white/80 hover:text-white transition">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Chat area -->
+      <div id="chat-box" class="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 bg-gradient-to-b from-white to-primary-50 flex flex-col">
+        <!-- Welcome message with HTML entities -->
+        <div class="flex justify-start">
+          <div class="message-bubble bg-primary-100 text-primary-900 px-4 py-3 rounded-2xl rounded-tl-none">
+            Hi there &#10084;&#65039; I'm here to listen without judgment. How are you feeling today?
+          </div>
+        </div>
+      </div>
+
+      <!-- Scroll to bottom button -->
+      <button id="scroll-to-bottom" class="scroll-to-bottom" title="Scroll to bottom">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+      </button>
+
+      <!-- Typing indicator template (hidden by default) -->
+      <div id="typing-indicator" class="hidden p-3 md:p-4">
+        <div class="flex justify-start">
+          <div class="message-bubble bg-primary-100 text-primary-900 px-4 py-3 rounded-2xl rounded-tl-none">
+            <div class="typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="border-t border-primary-100 p-3 md:p-4 bg-white sticky bottom-0 z-20">
+        <form id="chat-form" class="flex items-center space-x-2 md:space-x-3" onsubmit="return false;">
+          <div class="flex-1 relative">
+            <input
+              id="user-input"
+              type="text"
+              placeholder="Share what's on your mind..."
+              class="w-full px-4 py-2.5 md:py-3 bg-primary-50 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400 focus:bg-white transition text-base input-focus-animation"
+              required
+            />
+            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-primary-400 hover:text-primary-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          </div>
+          <button
+            type="submit"
+            class="bg-primary-600 text-white p-2.5 md:p-3 rounded-full hover:bg-primary-700 transition shadow-md flex-shrink-0"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </form>
+        <p class="text-xs text-primary-400 mt-2 text-center hidden md:block">This is a safe space. Everything you share is confidential.</p>
+      </div>
+    </div>
+    
+    <!-- Device base/stand (hidden on mobile) -->
+    <div class="device-base hidden md:block"></div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById("chat-form");
+      const input = document.getElementById("user-input");
+      const chatBox = document.getElementById("chat-box");
+      const typingIndicator = document.getElementById("typing-indicator");
+      const scrollToBottomBtn = document.getElementById("scroll-to-bottom");
+      const newChatBtn = document.querySelector(".new-chat-button");
+
+      // Scroll to bottom button visibility
+      chatBox.addEventListener('scroll', () => {
+        const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 100;
+        scrollToBottomBtn.classList.toggle('visible', !isNearBottom);
+      });
+
+      scrollToBottomBtn.addEventListener('click', () => {
+        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+      });
+
+      // New chat button
+      newChatBtn.addEventListener('click', () => {
+        if (confirm('Start a new chat? This will clear the current conversation.')) {
+          chatBox.innerHTML = '';
+          localStorage.removeItem('chatHistory');
+        }
+      });
+
+      // Function to format timestamp
+      function formatTimestamp() {
+        const now = new Date();
+        return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+      // Function to add a message to the chat box
+      function addMessage(sender, text) {
+        const messageContainer = document.createElement("div");
+        messageContainer.classList.add("flex", "mb-4", "message-container", "relative");
+        messageContainer.classList.add(sender === "user" ? "justify-end" : "justify-start");
+
+        const messageWrapper = document.createElement("div");
+        messageWrapper.classList.add("flex", "flex-col");
+        messageWrapper.classList.add(sender === "user" ? "items-end" : "items-start");
+
+        const messageBubble = document.createElement("div");
+        messageBubble.classList.add("message-bubble", "px-4", "py-3", "rounded-2xl", "message-animate");
+        
+        if (sender === "user") {
+          messageBubble.classList.add("bg-primary-600", "text-white", "rounded-br-none");
+        } else {
+          messageBubble.classList.add("bg-primary-100", "text-primary-900", "rounded-tl-none");
+        }
+
+        // Add copy button (only for user messages)
+        if (sender === "user") {
+          const copyButton = document.createElement("button");
+          copyButton.classList.add("copy-button", "absolute", "top-2", "right-2", "text-white/60", "hover:text-white");
+          copyButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+            </svg>
+          `;
+          copyButton.title = "Copy message";
+          copyButton.onclick = (e) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(text);
+            copyButton.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            `;
+            setTimeout(() => {
+              copyButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+              `;
+            }, 2000);
+          };
+          messageContainer.appendChild(copyButton);
+        }
+
+        // Add timestamp
+        const timestamp = document.createElement("div");
+        timestamp.classList.add("message-status", "timestamp");
+        timestamp.setAttribute("data-timestamp", new Date().toLocaleString());
+        timestamp.textContent = formatTimestamp();
+
+        // Add message reactions (only for bot messages)
+        if (sender === "bot") {
+          const reactions = document.createElement("div");
+          reactions.classList.add("message-reactions");
+          const emojis = ["&#128077;", "&#10084;&#65039;", "&#128522;", "&#129300;"];
+          emojis.forEach(emoji => {
+            const button = document.createElement("button");
+            button.classList.add("reaction-button");
+            button.innerHTML = emoji;
+            button.onclick = (e) => {
+              e.stopPropagation();
+              button.classList.toggle("bg-primary-100");
+            };
+            reactions.appendChild(button);
+          });
+          messageWrapper.appendChild(reactions);
+        }
+
+        // Add status indicator for user messages
+        if (sender === "user") {
+          const status = document.createElement("div");
+          status.classList.add("message-status");
+          status.innerHTML = `
+            <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Delivered</span>
+          `;
+          messageWrapper.appendChild(status);
+        }
+
+        messageBubble.textContent = text;
+        messageWrapper.appendChild(messageBubble);
+        messageWrapper.appendChild(timestamp);
+        messageContainer.appendChild(messageWrapper);
+        chatBox.appendChild(messageContainer);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Save to localStorage
+        const chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+        chatHistory.push({ sender, text, timestamp: new Date().toISOString() });
+        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+      }
+
+      // Load chat history
+      const chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+      chatHistory.forEach(msg => {
+        addMessage(msg.sender, msg.text);
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const userMessage = input.value.trim();
+        if (!userMessage) return;
+
+        // Add the user's message to the chat
+        addMessage("user", userMessage);
+        input.value = "";
+
+        // Show typing indicator
+        showTypingIndicator();
+
+        try {
+          // Make API request to get bot's response
+          const res = await fetch("/api/chat/message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: userMessage }),
+          });
+
+          const data = await res.json();
+
+          // Remove typing indicator and add bot's response
+          hideTypingIndicator();
+
+          // Clean the bot's response by removing the "Bot:" prefix if it exists
+          let cleanedResponse = data.response;
+          if (cleanedResponse.startsWith("Bot:")) {
+            cleanedResponse = cleanedResponse.substring(4).trim();
+          }
+
+          // Add the cleaned bot's response to the chat
+          addMessage("bot", cleanedResponse);
+        } catch (err) {
+          console.error(err);
+          hideTypingIndicator();
+          addMessage("bot", "I'm having trouble connecting right now. Please try again in a moment.");
+        }
+      });
+
+      // Function to show the typing indicator
+      function showTypingIndicator() {
+        typingIndicator.classList.remove("hidden");
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      // Function to hide the typing indicator
+      function hideTypingIndicator() {
+        typingIndicator.classList.add("hidden");
+      }
+    });
+  </script>
+</body>
+</html>
