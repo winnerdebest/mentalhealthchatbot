@@ -1,139 +1,184 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from app.schemas.message import ChatRequest, ChatResponse
-import environ
-import requests
+import google.generativeai as genai
+import os
+import random
+from dotenv import load_dotenv
+from typing import Dict, Any, List
+from difflib import SequenceMatcher
 
 # Load environment variables
-env = environ.Env()
-environ.Env.read_env()
+load_dotenv()
 
 router = APIRouter()
 
-# Hugging Face API setup
-HF_API_KEY = env("HF_API_KEY")
-HEADERS = {
-    "Authorization": f"Bearer {HF_API_KEY}"
-}
+# Configure Gemini
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=GEMINI_API_KEY)
 
-# Hugging Face model URLs
-EMOTION_API_URL = "https://api-inference.huggingface.co/models/j-hartmann/emotion-english-distilroberta-base"
-CHAT_API_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
+print("Available Models:")
+for m in genai.list_models():
+    if "generateContent" in m.supported_generation_methods:
+        print(f"- {m.name} (Supports generateContent)")
+
+# Initialize the model
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 # In-memory session store
-user_sessions = {}
+user_sessions: Dict[str, Dict[str, Any]] = {}
 
-REQUIRED_FIELDS = ["name", "age", "reason"]
+# Crisis keywords that trigger emergency resources
+CRISIS_KEYWORDS = {
+    "suicide", "kill myself", "end my life", "want to die",
+    "self-harm", "cutting", "overdose", "abuse"
+}
+
+# Mental health resources
+RESOURCES = {
+    "US": "National Suicide Prevention Lifeline: 988",
+    "UK": "Samaritans: 116 123",
+    "General": "Crisis Text Line: Text HOME to 741741"
+}
+
+def check_for_crisis(text: str) -> bool:
+    text = text.lower()
+    return any(keyword in text for keyword in CRISIS_KEYWORDS)
+
+def similar(a: str, b: str) -> float:
+    return SequenceMatcher(None, a, b).ratio()
 
 def collect_user_info(user_id: str, user_input: str) -> str:
     session = user_sessions[user_id]
-    step = session["step"]
-    current_field = REQUIRED_FIELDS[step]
-
-    session["info"][current_field] = user_input
-    session["step"] += 1
-
-    if session["step"] < len(REQUIRED_FIELDS):
-        next_field = REQUIRED_FIELDS[session["step"]]
-        return f"Please tell me your {next_field}:"
+    if session["step"] == 0:
+        session["info"]["name"] = user_input
+        session["step"] += 1
+        return f"Thanks for sharing your name, {user_input}. What's been on your mind lately?"
+    elif session["step"] == 1:
+        session["info"]["concern"] = user_input
+        session["step"] += 1
+        return "Thanks for opening up. How long have you felt this way?"
     else:
-        return "Thanks! Let's get started. How can I support you today?"
+        session["info"]["duration"] = user_input
+        session["step"] += 1
+        return "I'm here to listen. What would you like to talk about now?"
 
-def generate_response(user_text: str, user_id: str = "default_user") -> str:
+async def generate_therapeutic_response(user_text: str, session: Dict[str, Any]) -> str:
+    if check_for_crisis(user_text):
+        crisis_intro = "This sounds overwhelming."
+        return (
+            f"{crisis_intro} You're not alone - help is available:\n"
+            f"{RESOURCES['US']}\n{RESOURCES['UK']}\n{RESOURCES['General']}\n"
+            "Would you like help connecting to these resources?"
+        )
+
+    # Update conversation history
+    session.setdefault("history", []).append(user_text)
+    if len(session["history"]) > 5:
+        session["history"] = session["history"][-5:]
+
+    # Filter out repetitive content
+    if any(similar(user_text, old) > 0.9 for old in session["history"][:-1]):
+        return "You've mentioned that already. Could you tell me more or say it differently?"
+
+    # Build context prompt
+    name = session["info"].get("name", "friend")
+    concern = session["info"].get("concern", "Not specified")
+    duration = session["info"].get("duration", "Unknown")
+    history = "\n".join([f"User: {msg}" for msg in session["history"]])
+
+    prompt = f"""
+You are a caring mental health supporter. Respond naturally and empathetically, like a thoughtful friend.
+- Be validating, non-repetitive
+- Use short, warm, conversational sentences
+- Ask gentle, open-ended questions
+- Do NOT give advice
+
+Name: {name}
+Concern: {concern}
+Duration: {duration}
+
+Recent history:
+{history}
+
+User now says: "{user_text}"
+Your response:
+"""
+
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.9,
+                top_p=0.9,
+                top_k=20,
+                max_output_tokens=200
+            ),
+            safety_settings={
+                "HARM_CATEGORY_DANGEROUS": "BLOCK_ONLY_HIGH",
+                "HARM_CATEGORY_HARASSMENT": "BLOCK_ONLY_HIGH",
+                "HARM_CATEGORY_HATE_SPEECH": "BLOCK_ONLY_HIGH",
+                "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_ONLY_HIGH",
+                "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_ONLY_HIGH",
+            }
+        )
+
+        if not response.candidates or response.candidates[0].finish_reason == 2:
+            raise ValueError("Empty or blocked response")
+
+        text = "".join(part.text for part in response.candidates[0].content.parts).strip()
+
+        if not text:
+            raise ValueError("No text generated")
+
+        # Add user name casually
+        if random.random() < 0.3:
+            if "." in text:
+                parts = text.split(".")
+                parts[0] += f", {name}"
+                text = ".".join(parts)
+            else:
+                text = f"{name}, {text[0].lower()}{text[1:]}"
+
+        # Ensure it ends properly
+        if not any(text.endswith(p) for p in ".?!"):
+            text += random.choice([
+                " What’s that been like for you?",
+                " Would you like to talk more about that?",
+                " How has that affected you lately?"
+            ])
+
+        return text
+
+    except Exception as e:
+        print(f"Gemini API error: {e}")
+        return random.choice([
+            "I’m here with you. Could you share a bit more?",
+            "I didn’t quite get that. Could you rephrase it?",
+            "I want to understand better. Tell me more."
+        ])
+
+@router.post("/chat/message", response_model=ChatResponse)
+async def get_chat_response(request: ChatRequest):
+    user_id = "default_user"  # Replace with actual user ID in real app
+    user_text = request.message.strip()
+
+    if not user_text:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+
     if user_id not in user_sessions:
-        user_sessions[user_id] = {
-            "step": 0,
-            "info": {}
-        }
+        user_sessions[user_id] = {"step": 0, "info": {}, "history": []}
+        greeting = random.choice([
+            "Hi there. I'm here to listen. What should I call you?",
+            "Hello. I'd like to support you. May I know your name?",
+            "Hi. I'm here for you. What's your name?"
+        ])
+        if user_text.lower() in ["hi", "hello", "hey"]:
+            return ChatResponse(response=greeting)
 
     session = user_sessions[user_id]
 
-    if session["step"] < len(REQUIRED_FIELDS):
-        if session["step"] == 0 and user_text.lower() in ["hi", "hello", "hey"]:
-            return "Hi there! Before we begin, what's your name?"
+    if session["step"] < 3:
+        return ChatResponse(response=collect_user_info(user_id, user_text))
 
-        return collect_user_info(user_id, user_text)
-
-    # Emotion detection
-    emotion = "neutral"
-    try:
-        emotion_payload = {"inputs": user_text}
-        emotion_response = requests.post(EMOTION_API_URL, headers=HEADERS, json=emotion_payload)
-        emotion_response.raise_for_status()
-        prediction = emotion_response.json()
-
-        if isinstance(prediction, list) and isinstance(prediction[0], list):
-            prediction = prediction[0]
-        if isinstance(prediction, list) and prediction and isinstance(prediction[0], dict):
-            emotion = prediction[0].get("label", "neutral").lower()
-    except Exception as e:
-        print("Emotion detection error:", e)
-
-    try:
-        user_info = session["info"]
-        prompt = (
-            f"<|system|>You are a caring and emotionally intelligent companion trained to provide support. "
-            f"Always respond briefly, empathetically, and ask gentle questions to help users express themselves.\n"
-            f"<|user|>The user's name is {user_info['name']}, age {user_info['age']}, here for {user_info['reason']}.\n"
-            f"Their current emotion is: {emotion}.\n"
-            f"They said: \"{user_text}\"\n"
-            f"<|assistant|>"
-        )
-
-        chat_payload = {
-            "inputs": prompt,
-            "parameters": {
-                "max_new_tokens": 150,
-                "temperature": 0.7,
-                "top_p": 0.9,
-                "do_sample": True,
-                "repetition_penalty": 1.1
-            }
-        }
-
-        chat_response = requests.post(CHAT_API_URL, headers=HEADERS, json=chat_payload)
-        chat_response.raise_for_status()
-        data = chat_response.json()
-
-        if isinstance(data, list) and "generated_text" in data[0]:
-            full_text = data[0]["generated_text"]
-            generated_text = full_text.split("<|assistant|>")[-1].strip()
-        else:
-            generated_text = data.get("generated_text", "I'm here if you want to talk more.")
-
-        # Trim to 2 sentences max
-        sentences = generated_text.split(".")
-        if len(sentences) > 2:
-            generated_text = ". ".join(sentences[:2]).strip() + "."
-
-        # Append emotion-aware follow-up
-        follow_ups = {
-            "sadness": "Do you want to talk about what's been making you feel this way?",
-            "anger": "Would you like to share what’s been bothering you lately?",
-            "fear": "Is there anything in particular you’re worried about right now?",
-            "joy": "That’s wonderful! What’s been bringing you joy recently?",
-            "surprise": "That sounds unexpected! Want to talk more about it?",
-            "disgust": "That sounds unpleasant — want to tell me more?",
-            "neutral": "Would you like to talk about how your day has been so far?"
-        }
-        follow_up = follow_ups.get(emotion, "")
-        if follow_up and not generated_text.endswith("?"):
-            generated_text += " " + follow_up
-
-        # Emoji response
-        emojis = {
-            "joy": "😊", "sadness": "🤗", "anger": "😌", "fear": "🌟",
-            "surprise": "😮", "neutral": "💭", "disgust": "💝"
-        }
-        emoji = emojis.get(emotion, "💭")
-
-        return f"{generated_text} {emoji}"
-
-    except Exception as e:
-        print("Text generation error:", e)
-        return "I'm having some trouble responding right now. Can you try again later? 🤔"
-
-@router.post("/chat/message", response_model=ChatResponse)
-def get_chat_response(request: ChatRequest):
-    user_input = request.message
-    reply = generate_response(user_input, user_id="default_user")
-    return ChatResponse(response=reply)
+    response = await generate_therapeutic_response(user_text, session)
+    return ChatResponse(response=response)
