@@ -4,25 +4,28 @@
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MindfulAI Chat</title>
+  <title>UNIPORT Mental Health Support</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
             primary: {
-              50: '#f5f3ff',
-              100: '#ede9fe',
-              200: '#ddd6fe',
-              300: '#c4b5fd',
-              400: '#a78bfa',
-              500: '#8b5cf6',
-              600: '#7c3aed',
-              700: '#6d28d9',
-              800: '#5b21b6',
-              900: '#4c1d95',
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              300: '#86efac',
+              400: '#4ade80',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            },
+            secondary: {
+              500: '#1d4ed8'
             }
           },
           fontFamily: {
@@ -47,7 +50,7 @@
     }
     @media (min-width: 641px) {
       body {
-        background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
       }
     }
     body {
@@ -70,7 +73,7 @@
     .typing-indicator span {
       width: 8px;
       height: 8px;
-      background: #8b5cf6;
+      background: #16a34a;
       border-radius: 50%;
       animation: bounce 1.4s infinite ease-in-out;
     }
@@ -83,7 +86,7 @@
     .device-base {
       width: 120%;
       height: 30px;
-      background: #ede9fe;
+      background: #dcfce7;
       border-radius: 0 0 50px 50px;
       position: relative;
       box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -93,34 +96,25 @@
       position: absolute;
       width: 60%;
       height: 10px;
-      background: #ddd6fe;
+      background: #bbf7d0;
       border-radius: 0 0 10px 10px;
       bottom: -10px;
       left: 20%;
     }
-    /* Prevent zoom on input focus for mobile */
-    @media screen and (max-width: 640px) {
-      input[type="text"] {
-        font-size: 16px !important;
-      }
-    }
-    
     /* Message animations */
     @keyframes slideIn {
       from { transform: translateY(10px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
-    
     .message-animate {
       animation: slideIn 0.3s ease-out;
     }
-
     /* Scroll to bottom button */
     .scroll-to-bottom {
       position: fixed;
       bottom: 80px;
       right: 20px;
-      background: rgba(139, 92, 246, 0.9);
+      background: rgba(22, 163, 74, 0.9);
       color: white;
       width: 40px;
       height: 40px;
@@ -135,109 +129,51 @@
       z-index: 30;
       backdrop-filter: blur(4px);
     }
-
     .scroll-to-bottom.visible {
       opacity: 1;
       transform: translateY(0);
     }
-
-    /* Message reactions */
-    .message-reactions {
-      position: absolute;
-      bottom: -20px;
-      right: 0;
-      display: flex;
-      gap: 4px;
-      background: white;
-      padding: 2px 6px;
-      border-radius: 12px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      opacity: 0;
-      transform: translateY(5px);
-      transition: all 0.2s ease;
-    }
-
-    .message-container:hover .message-reactions {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .reaction-button {
-      cursor: pointer;
-      padding: 2px;
-      border-radius: 50%;
-      transition: all 0.2s ease;
-    }
-
-    .reaction-button:hover {
-      background: #f3f4f6;
-      transform: scale(1.1);
-    }
-
     /* Input field animation */
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
-      70% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+      70% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
     }
-
     .input-focus-animation:focus {
       animation: pulse 2s infinite;
     }
-
-    /* Copy button */
-    .copy-button {
-      opacity: 0;
-      transition: opacity 0.2s ease;
+    /* Header gradient */
+    .header-gradient {
+      background: linear-gradient(135deg, #16a34a 0%, #1d4ed8 100%);
     }
-
-    .message-container:hover .copy-button {
-      opacity: 1;
+    /* Chat background */
+    .chat-background {
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2316a34a' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     }
-
-    /* Status indicators */
-    .message-status {
-      font-size: 0.75rem;
-      color: #6B7280;
-      margin-top: 2px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+    /* Message bubbles */
+    .bot-bubble {
+      background: #f0fdf4;
+      color: #14532d;
+      border-radius: 18px 18px 18px 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-
-    .status-icon {
-      width: 14px;
-      height: 14px;
-    }
-
-    /* New chat button animation */
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    .new-chat-button:hover svg {
-      animation: spin 1s linear infinite;
-    }
-
-    /* Timestamp tooltip */
-    .timestamp {
-      position: relative;
-    }
-
-    .timestamp:hover::after {
-      content: attr(data-timestamp);
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
+    .user-bubble {
+      background: #16a34a;
       color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      white-space: nowrap;
-      z-index: 10;
+      border-radius: 18px 18px 4px 18px;
+      box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+    }
+    /* Send button animation */
+    .send-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(22, 163, 74, 0.3);
+    }
+    .send-button:active {
+      transform: translateY(0);
+    }
+    /* Emoji picker button */
+    .emoji-button:hover {
+      transform: scale(1.1);
     }
   </style>
 </head>
@@ -245,9 +181,9 @@
   <!-- Device with base -->
   <div class="flex flex-col items-center w-full h-full md:h-auto">
     <!-- Main device -->
-    <div class="w-full md:max-w-lg bg-white md:bg-white/90 md:backdrop-blur-sm md:rounded-2xl md:shadow-xl overflow-hidden flex flex-col h-full md:h-[85vh] relative z-10">
+    <div class="w-full md:max-w-lg bg-white md:bg-white/95 md:backdrop-blur-sm md:rounded-2xl md:shadow-xl overflow-hidden flex flex-col h-full md:h-[85vh] relative z-10">
       <!-- Header -->
-      <div class="bg-gradient-to-r from-primary-500 to-primary-600 p-4 md:p-5 text-white sticky top-0 z-20">
+      <div class="header-gradient p-4 md:p-5 text-white sticky top-0 z-20">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <button class="new-chat-button bg-white/20 p-2 rounded-full hover:bg-white/30 transition">
@@ -256,8 +192,8 @@
               </svg>
             </button>
             <div>
-              <h1 class="text-lg md:text-xl font-semibold">MindfulAI</h1>
-              <p class="text-xs md:text-sm text-primary-100 opacity-90">Your mental health companion</p>
+              <h1 class="text-lg md:text-xl font-semibold">Mental Health Chatbot</h1>
+              <p class="text-xs md:text-sm text-white/90">Confidential Student Support</p>
             </div>
           </div>
           <div class="flex items-center space-x-3">
@@ -276,11 +212,11 @@
       </div>
       
       <!-- Chat area -->
-      <div id="chat-box" class="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 bg-gradient-to-b from-white to-primary-50 flex flex-col">
-        <!-- Welcome message with HTML entities -->
+      <div id="chat-box" class="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 chat-background flex flex-col">
+        <!-- Welcome message -->
         <div class="flex justify-start">
-          <div class="message-bubble bg-primary-100 text-primary-900 px-4 py-3 rounded-2xl rounded-tl-none">
-            Hi there &#10084;&#65039; I'm here to listen without judgment. Lets Start with your name?
+          <div class="message-bubble bot-bubble px-4 py-3 message-animate">
+            Hi there! I'm your mental health companion. lets begin your journey
           </div>
         </div>
       </div>
@@ -295,7 +231,7 @@
       <!-- Typing indicator template (hidden by default) -->
       <div id="typing-indicator" class="hidden p-3 md:p-4">
         <div class="flex justify-start">
-          <div class="message-bubble bg-primary-100 text-primary-900 px-4 py-3 rounded-2xl rounded-tl-none">
+          <div class="message-bubble bot-bubble px-4 py-3">
             <div class="typing-indicator">
               <span></span>
               <span></span>
@@ -306,17 +242,17 @@
       </div>
 
       <!-- Input area -->
-      <div class="border-t border-primary-100 p-3 md:p-4 bg-white sticky bottom-0 z-20">
+      <div class="border-t border-gray-100 p-3 md:p-4 bg-white sticky bottom-0 z-20">
         <form id="chat-form" class="flex items-center space-x-2 md:space-x-3" onsubmit="return false;">
           <div class="flex-1 relative">
             <input
               id="user-input"
               type="text"
               placeholder="Share what's on your mind..."
-              class="w-full px-4 py-2.5 md:py-3 bg-primary-50 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400 focus:bg-white transition text-base input-focus-animation"
+              class="w-full px-4 py-2.5 md:py-3 bg-gray-50 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition text-base input-focus-animation"
               required
             />
-            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-primary-400 hover:text-primary-600">
+            <button type="button" class="emoji-button absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-600 transition">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -324,14 +260,14 @@
           </div>
           <button
             type="submit"
-            class="bg-primary-600 text-white p-2.5 md:p-3 rounded-full hover:bg-primary-700 transition shadow-md flex-shrink-0"
+            class="send-button bg-primary-600 text-white p-2.5 md:p-3 rounded-full hover:bg-primary-700 transition shadow-md flex-shrink-0"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
             </svg>
           </button>
         </form>
-        <p class="text-xs text-primary-400 mt-2 text-center hidden md:block">This is a safe space. Everything you share is confidential.</p>
+        <p class="text-xs text-gray-400 mt-2 text-center hidden md:block">Confidential support for students</p>
       </div>
     </div>
     
@@ -360,8 +296,14 @@
 
       // New chat button
       newChatBtn.addEventListener('click', () => {
-        if (confirm('Start a new chat? This will clear the current conversation.')) {
-          chatBox.innerHTML = '';
+        if (confirm('Start a new conversation? Your current chat will be cleared.')) {
+          chatBox.innerHTML = `
+            <div class="flex justify-start">
+              <div class="message-bubble bot-bubble px-4 py-3 message-animate">
+                 Hi there! I'm your mental health companion. lets begin your journey
+              </div>
+            </div>
+          `;
           localStorage.removeItem('chatHistory');
         }
       });
@@ -383,83 +325,23 @@
         messageWrapper.classList.add(sender === "user" ? "items-end" : "items-start");
 
         const messageBubble = document.createElement("div");
-        messageBubble.classList.add("message-bubble", "px-4", "py-3", "rounded-2xl", "message-animate");
+        messageBubble.classList.add("message-bubble", "px-4", "py-3", "message-animate");
         
         if (sender === "user") {
-          messageBubble.classList.add("bg-primary-600", "text-white", "rounded-br-none");
+          messageBubble.classList.add("user-bubble");
         } else {
-          messageBubble.classList.add("bg-primary-100", "text-primary-900", "rounded-tl-none");
-        }
-
-        // Add copy button (only for user messages)
-        if (sender === "user") {
-          const copyButton = document.createElement("button");
-          copyButton.classList.add("copy-button", "absolute", "top-2", "right-2", "text-white/60", "hover:text-white");
-          copyButton.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-            </svg>
-          `;
-          copyButton.title = "Copy message";
-          copyButton.onclick = (e) => {
-            e.stopPropagation();
-            navigator.clipboard.writeText(text);
-            copyButton.innerHTML = `
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-            `;
-            setTimeout(() => {
-              copyButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                </svg>
-              `;
-            }, 2000);
-          };
-          messageContainer.appendChild(copyButton);
-        }
-
-        // Add timestamp
-        const timestamp = document.createElement("div");
-        timestamp.classList.add("message-status", "timestamp");
-        timestamp.setAttribute("data-timestamp", new Date().toLocaleString());
-        timestamp.textContent = formatTimestamp();
-
-        // Add message reactions (only for bot messages)
-        if (sender === "bot") {
-          const reactions = document.createElement("div");
-          reactions.classList.add("message-reactions");
-          const emojis = ["&#128077;", "&#10084;&#65039;", "&#128522;", "&#129300;"];
-          emojis.forEach(emoji => {
-            const button = document.createElement("button");
-            button.classList.add("reaction-button");
-            button.innerHTML = emoji;
-            button.onclick = (e) => {
-              e.stopPropagation();
-              button.classList.toggle("bg-primary-100");
-            };
-            reactions.appendChild(button);
-          });
-          messageWrapper.appendChild(reactions);
-        }
-
-        // Add status indicator for user messages
-        if (sender === "user") {
-          const status = document.createElement("div");
-          status.classList.add("message-status");
-          status.innerHTML = `
-            <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Delivered</span>
-          `;
-          messageWrapper.appendChild(status);
+          messageBubble.classList.add("bot-bubble");
         }
 
         messageBubble.textContent = text;
         messageWrapper.appendChild(messageBubble);
+        
+        // Add timestamp
+        const timestamp = document.createElement("div");
+        timestamp.classList.add("text-xs", "text-gray-500", "mt-1");
+        timestamp.textContent = formatTimestamp();
         messageWrapper.appendChild(timestamp);
+
         messageContainer.appendChild(messageWrapper);
         chatBox.appendChild(messageContainer);
         chatBox.scrollTop = chatBox.scrollHeight;
@@ -472,9 +354,11 @@
 
       // Load chat history
       const chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
-      chatHistory.forEach(msg => {
-        addMessage(msg.sender, msg.text);
-      });
+      if (chatHistory.length > 0) {
+        chatHistory.forEach(msg => {
+          addMessage(msg.sender, msg.text);
+        });
+      }
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -527,6 +411,9 @@
       function hideTypingIndicator() {
         typingIndicator.classList.add("hidden");
       }
+
+      // Focus input on load
+      input.focus();
     });
   </script>
 </body>
