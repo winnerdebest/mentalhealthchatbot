@@ -1,4 +1,4 @@
-# MindfulAI Chatbot
+# Mental Health Chatbot
 
 MindfulAI is a compassionate, empathetic mental health support chatbot designed to provide emotional support and understanding. It uses advanced natural language processing models to engage users in meaningful conversations, helping them explore their feelings in a safe and supportive environment.
 
