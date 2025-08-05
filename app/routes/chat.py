@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+#from utils.sentiment import SentimentAnalyzer
 from app.schemas.message import ChatRequest, ChatResponse
 import google.generativeai as genai
 import os
@@ -6,6 +7,8 @@ import random
 from dotenv import load_dotenv
 from typing import Dict, Any, List
 from difflib import SequenceMatcher
+from app.utils.support_tools import detect_support_request
+
 
 # Load environment variables
 load_dotenv()
@@ -49,18 +52,23 @@ def similar(a: str, b: str) -> float:
 
 def collect_user_info(user_id: str, user_input: str) -> str:
     session = user_sessions[user_id]
+
     if session["step"] == 0:
         session["info"]["name"] = user_input
         session["step"] += 1
-        return f"Thanks for sharing your name, {user_input}. What's been on your mind lately?"
+        return f"Thanks for sharing your name, {user_input}. How are you feeling today?"
+    
     elif session["step"] == 1:
-        session["info"]["concern"] = user_input
+        session["info"]["feeling"] = user_input
         session["step"] += 1
-        return "Thanks for opening up. How long have you felt this way?"
-    else:
-        session["info"]["duration"] = user_input
-        session["step"] += 1
-        return "I'm here to listen. What would you like to talk about now?"
+        return "Thank you for telling me that. I'm here for you. What would you like to talk about now?"
+    
+    elif session["step"] == 2:
+        session["step"] = 3  # ✅ Advance to conversation mode
+        session.setdefault("history", []).append(user_input)
+        return "Thank you. I'm listening — tell me what's been weighing on your mind."
+
+
 
 async def generate_therapeutic_response(user_text: str, session: Dict[str, Any]) -> str:
     if check_for_crisis(user_text):
@@ -82,27 +90,41 @@ async def generate_therapeutic_response(user_text: str, session: Dict[str, Any])
 
     # Build context prompt
     name = session["info"].get("name", "friend")
-    concern = session["info"].get("concern", "Not specified")
-    duration = session["info"].get("duration", "Unknown")
+    feeling = session["info"].get("feeling", "Not specified")
     history = "\n".join([f"User: {msg}" for msg in session["history"]])
 
     prompt = f"""
-You are a caring mental health supporter. Respond naturally and empathetically, like a thoughtful friend.
-- Be validating, non-repetitive
-- Use short, warm, conversational sentences
-- Ask gentle, open-ended questions
-- Do NOT give advice
+You are A Mental health support chatbot — a warm, caring, and emotionally intelligent mental health supporter for students.
 
-Name: {name}
-Concern: {concern}
-Duration: {duration}
+Your role is to provide **empathetic, non-judgmental, and confidential support** for students dealing with emotional stress, anxiety, or life challenges. Many users may come to you in distress or confusion. You are here to make them feel heard, validated, and gently supported — not fixed.
 
-Recent history:
+Users may speak in Pidgin English. Understand and respond accordingly.
+
+💡 Project context:
+This AI exists because traditional support systems often fail students — due to stigma, delay, or unavailability. Many don’t feel safe asking for help, or they need someone to talk to outside office hours. MindfulAI fills that gap by offering immediate, on-demand, compassionate support — without giving medical or therapeutic advice.
+
+💬 Behavior guidelines:
+- Respond as a **caring, thoughtful friend**, not as a therapist or coach.
+- Keep your tone **warm, conversational, validating**, and emotionally aware.
+- NEVER give advice, diagnoses, or instructions.
+- Ask gentle **open-ended questions** to guide self-reflection.
+- Use **short, emotionally grounded** sentences.
+- When the user sounds confused, anxious, or sad — offer appropriate **motivational or affirmation quotes** based on their emotional tone.
+- If a quote is used, remember it — and be able to explain or refer to it again later if the user brings it up.
+- If the user references part of a quote (e.g., “dreams awake”), understand what they’re referring to and respond insightfully.
+- Reflect on the quote's meaning when asked.
+
+📌 Conversation details:
+- Name: {name}
+- Feeling: {feeling}
+
+🧠 Memory:
 {history}
 
-User now says: "{user_text}"
+🗣️ User now says: "{user_text}"
 Your response:
 """
+
 
     try:
         response = model.generate_content(
@@ -159,7 +181,7 @@ Your response:
 
 @router.post("/chat/message", response_model=ChatResponse)
 async def get_chat_response(request: ChatRequest):
-    user_id = "default_user"  # Replace with actual user ID in real app
+    user_id = "default_user"
     user_text = request.message.strip()
 
     if not user_text:
@@ -179,6 +201,10 @@ async def get_chat_response(request: ChatRequest):
 
     if session["step"] < 3:
         return ChatResponse(response=collect_user_info(user_id, user_text))
+    
+    tool_response = detect_support_request(user_text)
+    if tool_response:
+        return ChatResponse(response=tool_response)
 
     response = await generate_therapeutic_response(user_text, session)
     return ChatResponse(response=response)
